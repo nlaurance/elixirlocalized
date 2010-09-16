@@ -100,10 +100,9 @@ class LocalizedEntityBuilder(EntityBuilder):
             return localized
 
         def get_all_localized(self):
-            """ returns translations for all languages including the default one
+            """ returns translations for all languages excluding the default one
             """
             localized = getattr(self, '%s_localized_versions' % entity.__name__)
-            localized.append(self)
             return localized
 
         def get_many_localized(self, locale_strings):
