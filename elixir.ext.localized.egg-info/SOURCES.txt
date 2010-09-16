@@ -1,0 +1,16 @@
+.project
+.pydevproject
+setup.cfg
+setup.py
+elixir.ext.localized.egg-info/PKG-INFO
+elixir.ext.localized.egg-info/SOURCES.txt
+elixir.ext.localized.egg-info/dependency_links.txt
+elixir.ext.localized.egg-info/entry_points.txt
+elixir.ext.localized.egg-info/not-zip-safe
+elixir.ext.localized.egg-info/top_level.txt
+elixirext/__init__.py
+elixirext/localized.py
+elixirext/localized_old.py
+elixirext/versioned.py
+tests/__init__.py
+tests/test_localized.py
