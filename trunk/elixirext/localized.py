@@ -118,7 +118,7 @@ class LocalizedEntityBuilder(EntityBuilder):
             for the Localized class
             """
             if attr in Localized.__not_localized_fields__:
-                parent = getattr(self, 'ArticleLocalized_translated')
+                parent = getattr(self, '%s_translated' % self.__class__.__name__)
                 return getattr(parent, attr)
             else:
                 return self.__getattribute__(attr)
