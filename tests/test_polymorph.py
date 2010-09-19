@@ -15,14 +15,14 @@ class Media(Entity):
     has_field('title', Unicode)
     has_field('content', Unicode)
 
+    using_options(tablename='media')
     acts_as_localized(for_fields=['title', 'content'], default_locale='en')
-    using_options(inheritance='multi', polymorphic=True, tablename='media')
 
 class Movie(Media):
     has_field('resume', Unicode)
 
-    acts_as_localized(for_fields=['resume'], default_locale='en')
     using_options(inheritance='multi', polymorphic=True, tablename='movie')
+    acts_as_localized(for_fields=['resume'], default_locale='en')
 
 
 class TestPolymorphLocalized(unittest.TestCase):
@@ -38,18 +38,26 @@ class TestPolymorphLocalized(unittest.TestCase):
                            resume='not suitable for young children')
         session.add(self.movie)
         session.commit()
+        session.expunge_all()
 
     def tearDown(self):
         """Method used to destroy a database"""
-        session.rollback()
-        drop_all()
+#        session.rollback()
+#        drop_all()
 
-    def test_localized_versions(self):
-        fr = self.movie.add_locale('fr', title='Les mille et une nuits',
+
+    @do_it
+    def test_get_localized_versions(self):
+        # media attribute
+        retrieved_movie = Movie.get(1)
+        fr = retrieved_movie.add_locale('fr', title='Les mille et une nuits',
                                    content=u"J'ai entendu dire, Ô mon roi, dit Scheherazade",
                                    resume=u'déconseillé aux jeune public')
         session.commit()
-        # media attribute
-        assert self.movie.get_localized('fr').title == 'Les mille et une nuits'
+        session.expunge_all()
+
+        retrieved_movie = Movie.query.one()
+        assert retrieved_movie.get_localized('fr').title == 'Les mille et une nuits'
         # movie attribute
-        assert self.movie.get_localized('fr').resume == u'déconseillé aux jeune public'
+        assert retrieved_movie.get_localized('fr').resume == u'déconseillé aux jeune public'
+

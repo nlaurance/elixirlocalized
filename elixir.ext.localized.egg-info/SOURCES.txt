@@ -1,7 +1,9 @@
 .project
 .pydevproject
+README.txt
 setup.cfg
 setup.py
+.settings/org.eclipse.core.resources.prefs
 elixir.ext.localized.egg-info/PKG-INFO
 elixir.ext.localized.egg-info/SOURCES.txt
 elixir.ext.localized.egg-info/dependency_links.txt
@@ -10,7 +12,7 @@ elixir.ext.localized.egg-info/not-zip-safe
 elixir.ext.localized.egg-info/top_level.txt
 elixirext/__init__.py
 elixirext/localized.py
-elixirext/localized_old.py
-elixirext/versioned.py
 tests/__init__.py
 tests/test_localized.py
+tests/test_polymorph.py
+tests/test_relations.py

@@ -1,6 +1,6 @@
 #
-engine = 'sqlite:///localization.db'
 engine = 'sqlite:///:memory:'
+engine = 'sqlite:///localization.db'
 
 def do_it(test):
     """ a marker for nose selection

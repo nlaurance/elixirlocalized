@@ -30,9 +30,11 @@ class TestLocalized(unittest.TestCase):
         setup_all()
         create_all()
 
-        self.article = Article(author='unknown', title='A Thousand and one nights', content='It has been related to me, O happy King, said Shahrazad')
-        session.add(self.article)
-        session.commit()
+        article = Article(author='unknown', title='A Thousand and one nights', content='It has been related to me, O happy King, said Shahrazad')
+        session.add(article)
+        session.flush()
+        session.expunge_all()
+        self.article = Article.get(1)
 
     def tearDown(self):
         """Method used to destroy a database"""
@@ -40,13 +42,10 @@ class TestLocalized(unittest.TestCase):
         drop_all()
 
     def test_localized_versions(self):
-
         ar = self.article.add_locale('ar', title=u'كتاب ألف ليلة وليلة‎', content=u"قمة الأدب العربى ودرته وتاجه على مر تاريخه" )
         fr = self.article.add_locale('fr', title='Les mille et une nuits', content=u"J'ai entendu dire, Ô mon roi, dit Scheherazade")
         assert ar in self.article.get_all_localized()
         assert fr in self.article.get_all_localized()
-        assert fr.parent is self.article
-        assert ar.parent is self.article
 
     def test_localized_code(self):
 
@@ -70,7 +69,6 @@ class TestLocalized(unittest.TestCase):
         assert self.article.default_locale == 'en'
         assert self.article.get_localized('en').title == self.article.title
 
-    @do_it
     def test_get_many_localized(self):
         ar = self.article.add_locale('ar', title=u'كتاب ألف ليلة وليلة‎', content=u"قمة الأدب العربى ودرته وتاجه على مر تاريخه" )
         fr = self.article.add_locale('fr', title='Les mille et une nuits', content=u"J'ai entendu dire, Ô mon roi, dit Scheherazade")
