@@ -42,8 +42,8 @@ class TestPolymorphLocalized(unittest.TestCase):
 
     def tearDown(self):
         """Method used to destroy a database"""
-#        session.rollback()
-#        drop_all()
+        session.rollback()
+        drop_all()
 
 
     @do_it

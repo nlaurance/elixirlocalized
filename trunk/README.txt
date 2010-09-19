@@ -46,9 +46,11 @@ Example usage::
 
     >>> fr = article.add_locale('fr', title='Les mille et une nuits', content=u"J'ai entendu dire, Ô mon roi, dit Scheherazade")
     >>> session.flush()
+    >>> session.expunge()
 
     We can then access the translated attributes
 
+    >>> article = Article.get(1)
     >>> article.get_localized('fr').title
     'Les mille et une nuits'
 

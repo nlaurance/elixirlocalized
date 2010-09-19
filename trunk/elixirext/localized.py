@@ -36,7 +36,7 @@ class LocalizedEntityBuilder(EntityBuilder):
         def localized_init(self, **kw):
             self.__dict__.update(kw)
 
-        # create a localized table for the entity
+        # create a localized table for the localized
         columns = [column.copy() for column in entity.table.c
                    if column.name in entity.__localized_fields__]
 
@@ -45,6 +45,7 @@ class LocalizedEntityBuilder(EntityBuilder):
         # will voluntarily crash if entity has more than a single primary key
         if len(entity_pks) > 1:
             raise RuntimeError,  'Your entity *MUST* have a single primary key to be localized'
+
         columns.append(Column('translated_id', None,
                               ForeignKey("%s.%s" % (entity.table.name, entity_pk_name)),
                               primary_key=True,
