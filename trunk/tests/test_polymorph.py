@@ -33,10 +33,10 @@ class TestPolymorphLocalized(unittest.TestCase):
         setup_all()
         create_all()
 
-        self.movie = Movie(author='unknown', title='A Thousand and one nights',
+        movie = Movie(author='unknown', title='A Thousand and one nights',
                            content='It has been related to me, O happy King, said Shahrazad',
                            resume='not suitable for young children')
-        session.add(self.movie)
+        session.add(movie)
         session.commit()
         session.expunge_all()
 

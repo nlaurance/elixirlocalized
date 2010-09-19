@@ -12,17 +12,6 @@ __all__ = ['acts_as_localized']
 __doc_all__ = []
 
 
-
-
-
-def entity_polymorph_class(entity):
-    """
-    """
-    for class_ in entity.__mro__[1:]:
-        descriptor = getattr(class_, '_descriptor', False) # EntityBase has no _descriptor
-        if descriptor and  getattr(class_._descriptor, 'table', None) is not None:
-            return class_
-    return False
 #
 # the acts_as_versioned statement
 #
@@ -61,8 +50,12 @@ class LocalizedEntityBuilder(EntityBuilder):
                               primary_key=True,
                        ))
 
+        entity_parent_class = False
+        for class_ in entity.__mro__[1:]:
+            descriptor = getattr(class_, '_descriptor', False) # EntityBase has no _descriptor
+            if descriptor and  getattr(class_._descriptor, 'table', None) is not None:
+                entity_parent_class = class_
 
-        entity_parent_class = entity_polymorph_class(entity)
         localized_parent_class = False
         if entity_parent_class:
             localized_parent_class = getattr(entity_parent_class, '__localized_class__', False)
@@ -97,15 +90,13 @@ class LocalizedEntityBuilder(EntityBuilder):
             Localized = type('Localized', (object, ),
                              {'__init__': localized_init, })
 
+        # massage the object attributes
         Localized.__name__ = entity.__name__ + 'Localized'
         Localized.__localized_entity__ = entity
         Localized.__not_localized_fields__ = [column.name for column in entity.table.c
                                            if not column.name in entity.__localized_fields__]
 
         # map the localized class to the localized table for this entity
-#        mapper(Localized, table)
-
-
         if localized_parent_class:
             # if we inherit from another Localized
             mapper(Localized, table,
@@ -126,12 +117,11 @@ class LocalizedEntityBuilder(EntityBuilder):
             the Localized one, as this will replace the __getattr__
             for the Localized class
             """
-#
             if attr in Localized.__not_localized_fields__:
-                return getattr(self.translated, attr)
+                parent = getattr(self, 'ArticleLocalized_translated')
+                return getattr(parent, attr)
             else:
                 return self.__getattribute__(attr)
-
 
         # patching __getattr__ for Localized
         Localized.__getattr__ = get_localized_attr
@@ -142,9 +132,10 @@ class LocalizedEntityBuilder(EntityBuilder):
         entity = self.entity
         # we must name the relation after the entity name
         # otherwise it would supercede the same relationship on inherited mapper
+        # same thing for the backref
         entity.mapper.add_property('%s_localized_versions' % entity.__name__,
                                    relation(entity.__localized_class__,
-                                            backref='translated',
+                                            backref='%s_translated' % entity.__localized_class__.__name__,
                                             )
                                    )
 
@@ -163,13 +154,14 @@ class LocalizedEntityBuilder(EntityBuilder):
             return localized
 
         def get_all_localized(self):
-            """ returns translations for all languages excluding the default one
+            """ returns translations for all languages *excluding* the default one
             """
             localized = getattr(self, '%s_localized_versions' % entity.__name__)
             return localized
 
         def get_many_localized(self, locale_strings):
             """ returns translations for a list of given language
+            *including* default language if present in the list
             """
             localized = object_session(self).query(self.__localized_class__).filter(\
                    and_(self.__localized_class__.translated_id==self.id,
@@ -181,6 +173,7 @@ class LocalizedEntityBuilder(EntityBuilder):
         def get_localized(self, locale_string):
             """ return one and only one translation for a given language
             returns self if language is the default
+            or None if translation is not set yet
             """
             if locale_string == self.default_locale:
                 return self
