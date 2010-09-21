@@ -84,10 +84,6 @@ class LocalizedEntityBuilder(EntityBuilder):
                       *columns_and_constraints
                      )
 
-#    Column('invoice_id', Integer, nullable=False),
-#    Column('ref_num', Integer, nullable=False),
-#    ForeignKeyConstraint(['invoice_id', 'ref_num'], ['invoices.invoice_id', 'invoices.ref_num'])
-
         entity.__localized_table__ = table
 
         not_localized_columns = [column.name for column in entity.table.c
@@ -208,7 +204,6 @@ class LocalizedEntityBuilder(EntityBuilder):
         entity.get_all_localized = get_all_localized
         entity.get_many_localized = get_many_localized
         entity.get_localized = get_localized
-
 
 
 acts_as_localized = Statement(LocalizedEntityBuilder)

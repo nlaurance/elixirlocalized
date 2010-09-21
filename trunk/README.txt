@@ -2,7 +2,7 @@ Localized Elixir Statement Generator
 
 by Isaac Csandl, borrowing a bit from Jonathan LaCour's acts_as_versioned.
 modified by Graham Higgins
-rewritten for elixir 0.7 by Nicolas Laurance
+rewritten for elixir 0.7 by Nicolas Laurance with contibutions of Yannick Bréhon.
 
 =========
 Localized
