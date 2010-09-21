@@ -52,12 +52,12 @@ class TestPolymorphLocalized(unittest.TestCase):
         retrieved_movie = Movie.get(1)
         fr = retrieved_movie.add_locale('fr', title='Les mille et une nuits',
                                    content=u"J'ai entendu dire, Ô mon roi, dit Scheherazade",
-                                   resume=u'déconseillé aux jeune public')
+                                   resume=u'déconseillé au jeune public')
         session.commit()
         session.expunge_all()
 
         retrieved_movie = Movie.query.one()
         assert retrieved_movie.get_localized('fr').title == 'Les mille et une nuits'
         # movie attribute
-        assert retrieved_movie.get_localized('fr').resume == u'déconseillé aux jeune public'
+        assert retrieved_movie.get_localized('fr').resume == u'déconseillé au jeune public'
 
