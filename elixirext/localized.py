@@ -1,7 +1,7 @@
 from sqlalchemy            import Table, Column, and_, desc, ForeignKey
 from sqlalchemy.orm        import mapper, MapperExtension, EXT_CONTINUE, \
                                   object_session, relation
-
+from sqlalchemy import ForeignKeyConstraint
 from elixir                import Integer, DateTime
 from elixir                import Unicode
 from elixir.statements     import Statement
@@ -37,7 +37,7 @@ class LocalizedEntityBuilder(EntityBuilder):
             self.__dict__.update(kw)
 
         # create a localized table for the localized
-        columns = [column.copy() for column in entity.table.c
+        columns_and_constraints = [column.copy() for column in entity.table.c
                    if column.name in entity.__localized_fields__]
 
         entity_pks = entity._descriptor.primary_keys
@@ -46,10 +46,12 @@ class LocalizedEntityBuilder(EntityBuilder):
         if len(entity_pks) > 1:
             raise RuntimeError,  'Your entity *MUST* have a single primary key to be localized'
 
-        columns.append(Column('translated_id', None,
+        # we define the primary key as a tuple (translated object, language)
+        columns_and_constraints.append(Column('translated_id', None,
                               ForeignKey("%s.%s" % (entity.table.name, entity_pk_name)),
                               primary_key=True,
                        ))
+        columns_and_constraints.append(Column('locale_id', Integer, primary_key=True))
 
         entity_parent_class = False
         for class_ in entity.__mro__[1:]:
@@ -61,41 +63,56 @@ class LocalizedEntityBuilder(EntityBuilder):
         if entity_parent_class:
             localized_parent_class = getattr(entity_parent_class, '__localized_class__', False)
 
-        # if at root of the inheritance tree, add a translated_type column
-        # to determine the type of object to load
-
         # XXX!!!! should find a way to determine if this is needed (non polymorph)
 
         if localized_parent_class:
+            # polymorphic inheritance is based on the foreign key tuple :
+            # (translated content, language)
+            # which tuple is the primary key of the root table
             parent_table_name = localized_parent_class._sa_class_manager.mapper.mapped_table.name
-            columns.append(Column('locale_id', None,
-                                  ForeignKey('%s.locale_id' % parent_table_name),
-                                  primary_key=True))
+            columns_and_constraints.append(ForeignKeyConstraint(['translated_id',
+                                                'locale_id'],
+                                               ['%s.translated_id' % parent_table_name,
+                                                '%s.locale_id' % parent_table_name]))
         else: # root case
-            columns.append(Column('translated_type', Unicode(40), nullable=False))
-            columns.append(Column('locale_id', Integer, primary_key=True))
-
+            # if at root of the inheritance tree, add a translated_type column
+            # to determine the type of object to load (polymorphic type)
+            columns_and_constraints.append(Column('translated_type', Unicode(40), nullable=False))
 
         # now make the table
         table = Table(entity.table.name + '_localized', entity.table.metadata,
-            *columns
-        )
+                      *columns_and_constraints
+                     )
+
+#    Column('invoice_id', Integer, nullable=False),
+#    Column('ref_num', Integer, nullable=False),
+#    ForeignKeyConstraint(['invoice_id', 'ref_num'], ['invoices.invoice_id', 'invoices.ref_num'])
+
         entity.__localized_table__ = table
 
+        not_localized_columns = [column.name for column in entity.table.c
+                                   if not column.name in entity.__localized_fields__]
 
         # create a class to map to that table
         if localized_parent_class:
+            not_localized_columns.extend(localized_parent_class.__not_localized_fields__)
             Localized = type('Localized', (localized_parent_class, ),
-                             {'__init__': localized_init, })
+                             {'__init__': localized_init,
+                              })
         else: # root case
             Localized = type('Localized', (object, ),
-                             {'__init__': localized_init, })
-
+                             {'__init__': localized_init,
+                              })
         # massage the object attributes
+        Localized.__not_localized_fields__ = not_localized_columns
         Localized.__name__ = entity.__name__ + 'Localized'
         Localized.__localized_entity__ = entity
-        Localized.__not_localized_fields__ = [column.name for column in entity.table.c
-                                           if not column.name in entity.__localized_fields__]
+
+        def localized__repr__(self):
+            return '<%r %r, id: %r for: %r>' \
+               % (self.__class__.__name__, self.locale_id,
+                  self.translated_id, self.__localized_entity__)
+        Localized.__repr__ = localized__repr__
 
         # map the localized class to the localized table for this entity
         if localized_parent_class:
@@ -119,8 +136,8 @@ class LocalizedEntityBuilder(EntityBuilder):
             for the Localized class
             """
             if attr in Localized.__not_localized_fields__:
-                parent = getattr(self, '%s_translated' % self.__class__.__name__)
-                return getattr(parent, attr)
+                translated = getattr(self, '%s_translated' % self.__class__.__name__)
+                return getattr(translated, attr)
             else:
                 return self.__getattribute__(attr)
 
