@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 import sys, os
 
-version = '0.0'
+version = '0.1'
 
-setup(name='elixir.ext.localized',
+setup(name='elixirext.localized',
       version=version,
       description="This allows you to localize the data contained in your Elixir entities.",
       long_description="""\
@@ -18,7 +18,7 @@ setup(name='elixir.ext.localized',
       include_package_data=True,
       zip_safe=False,
       install_requires=[
-          # -*- Extra requirements: -*-
+          'elixir',
       ],
       entry_points="""
       # -*- Entry points: -*-
