@@ -1,21 +1,24 @@
 from sqlalchemy            import Table, Column, and_, desc, ForeignKey
 from sqlalchemy.orm        import mapper, MapperExtension, EXT_CONTINUE, \
                                   object_session, relation
-from sqlalchemy import ForeignKeyConstraint
+from sqlalchemy            import ForeignKeyConstraint
 from elixir                import Integer, DateTime
 from elixir                import Unicode
 from elixir.statements     import Statement
 from elixir.properties     import EntityBuilder
 from elixir.entity         import getmembers
 
+from sqlalchemy.ext.associationproxy import association_proxy, \
+                                    AssociationProxy
+
+
 __all__ = ['acts_as_localized']
 __doc_all__ = []
 
 
-#
-# the acts_as_versioned statement
-#
 class LocalizedEntityBuilder(EntityBuilder):
+    """ acts_as_localized statement
+    """
 
     def __init__(self, entity, for_fields=[], default_locale=u'en'):
         self.entity = entity
@@ -104,6 +107,10 @@ class LocalizedEntityBuilder(EntityBuilder):
         Localized.__name__ = entity.__name__ + 'Localized'
         Localized.__localized_entity__ = entity
 
+#        for fname in ['author', 'release']:
+        for fname in [field for field in not_localized_columns if not hasattr(Localized, field)]:
+            setattr(Localized, fname, association_proxy('%s_translated' % Localized.__name__, fname))
+
         def localized__repr__(self):
             return '<%r %r, id: %r for: %r>' \
                % (self.__class__.__name__, self.locale_id,
@@ -126,19 +133,19 @@ class LocalizedEntityBuilder(EntityBuilder):
 
         entity.__localized_class__ = Localized
 
-        def get_localized_attr(self, attr):
-            """ will return either the 'translated' attribute or
-            the Localized one, as this will replace the __getattr__
-            for the Localized class
-            """
-            if attr in Localized.__not_localized_fields__:
-                translated = getattr(self, '%s_translated' % self.__class__.__name__)
-                return getattr(translated, attr)
-            else:
-                return self.__getattribute__(attr)
-
-        # patching __getattr__ for Localized
-        Localized.__getattr__ = get_localized_attr
+#        def get_localized_attr(self, attr):
+#            """ will return either the 'translated' attribute or
+#            the Localized one, as this will replace the __getattr__
+#            for the Localized class
+#            """
+#            if attr in Localized.__not_localized_fields__:
+#                translated = getattr(self, '%s_translated' % self.__class__.__name__)
+#                return getattr(translated, attr)
+#            else:
+#                return self.__getattribute__(attr)
+#
+#        # patching __getattr__ for Localized
+#        Localized.__getattr__ = get_localized_attr
 
     def after_mapper(self):
         """
@@ -150,6 +157,7 @@ class LocalizedEntityBuilder(EntityBuilder):
         entity.mapper.add_property('%s_localized_versions' % entity.__name__,
                                    relation(entity.__localized_class__,
                                             backref='%s_translated' % entity.__localized_class__.__name__,
+                                            cascade = 'all',
                                             )
                                    )
 
@@ -159,13 +167,28 @@ class LocalizedEntityBuilder(EntityBuilder):
         entity = self.entity
 
         def add_locale(self, locale_string, *args, **kw):
-            """ adds a new language
+            """ add a new language
             """
             localized = self.__localized_class__(translated_id=self.id)
             localized.locale_id = locale_string
             localized.__dict__.update(kw)
             getattr(self, '%s_localized_versions' % entity.__name__).append(localized)
             return localized
+
+        def edit_locale(self, locale_string, *args, **kw):
+            """ edit a localized for a given language
+            """
+            localized = self.get_localized(locale_string)
+            if localized is not None:
+                localized.__dict__.update(kw)
+            return localized
+
+        def delete_locale(self, locale_string):
+            """ delete a localized for a given language
+            """
+            localized = self.get_localized(locale_string)
+            if localized is not self and localized is not None:
+                object_session(self).delete(localized)
 
         def get_all_localized(self):
             """ returns translations for all languages *excluding* the default one
@@ -201,6 +224,8 @@ class LocalizedEntityBuilder(EntityBuilder):
             return localized
 
         entity.add_locale = add_locale
+        entity.edit_locale = edit_locale
+        entity.delete_locale = delete_locale
         entity.get_all_localized = get_all_localized
         entity.get_many_localized = get_many_localized
         entity.get_localized = get_localized

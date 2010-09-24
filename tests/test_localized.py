@@ -88,3 +88,49 @@ class TestLocalized(unittest.TestCase):
         fr = self.article.add_locale('fr', title='Les mille et une nuits', content=u"J'ai entendu dire, Ô mon roi, dit Scheherazade")
         fr.status = 'undergoing'
         assert fr.status == 'undergoing'
+
+    def test_delete_entity(self):
+        fr = self.article.add_locale('fr', title='Les mille et une nuits', content=u"J'ai entendu dire, Ô mon roi, dit Scheherazade")
+        session.commit()
+        session.expunge_all()
+        article = Article.get(1)
+        session.delete(article)
+        session.commit()
+        assert session.query(Article.__localized_class__).count() == 0
+
+    def test_edit_locale(self):
+        fr = self.article.add_locale('fr', title='Les mille et une nuits', content=u"J'ai entendu dire, Ô mon roi, dit Scheherazade")
+        session.flush()
+        session.expunge_all()
+        article = Article.get(1)
+        article.edit_locale('fr' , title='Les mille et deux nuits')
+        assert article.get_localized('fr').title == 'Les mille et une nuits'
+
+    def test_delete_locale(self):
+        fr = self.article.add_locale('fr', title='Les mille et une nuits', content=u"J'ai entendu dire, Ô mon roi, dit Scheherazade")
+        session.flush()
+        session.expunge_all()
+        article = Article.get(1)
+        article.delete_locale('fr')
+        session.flush()
+        session.expunge_all()
+        article = Article.get(1)
+        assert article.get_localized('fr') == None
+
+
+    def test_poc_assocproxy(self):
+        from datetime import datetime
+        article = Article(author='unknown', release=datetime.now(), title='A Thousand and one nights', content='It has been related to me, O happy King, said Shahrazad')
+        session.add(article)
+        session.flush()
+        session.expunge_all()
+        article = Article.get(1)
+
+        fr = article.add_locale('fr', title='Les mille et une nuits', content=u"J'ai entendu dire, Ô mon roi, dit Scheherazade")
+        session.commit()
+        session.expunge_all()
+
+        article = Article.get(1)
+
+        author = article.get_localized('fr').author
+        release = article.get_localized('fr').release
