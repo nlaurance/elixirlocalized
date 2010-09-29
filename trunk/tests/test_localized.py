@@ -11,6 +11,13 @@ from sqlalchemy.test.testing import assert_raises
 
 from tests import engine, do_it
 
+from zope.interface import Interface
+from zope.interface import implements
+from zope.interface import providedBy
+
+class IArticle(Interface):
+    """ marker interface
+    """
 
 class Article(Entity):
     has_field('author', Unicode)
@@ -22,6 +29,8 @@ class Article(Entity):
     using_options(tablename='articles')
 
     type = 'some article'
+
+    implements(IArticle)
 
     @property
     def my_method(self):
@@ -149,3 +158,8 @@ class TestLocalized(unittest.TestCase):
         fr = self.article.add_locale('fr', title='Les mille et une nuits', content=u"J'ai entendu dire, Ô mon roi, dit Scheherazade")
         assert self.article.type == 'some article'
         assert fr.type == 'some article'
+
+    @do_it
+    def test_interface(self):
+        fr = self.article.add_locale('fr', title='Les mille et une nuits', content=u"J'ai entendu dire, Ô mon roi, dit Scheherazade")
+        assert IArticle.providedBy(fr)

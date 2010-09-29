@@ -8,6 +8,8 @@ from elixir.statements     import Statement
 from elixir.properties     import EntityBuilder
 from elixir.entity         import getmembers
 
+from zope.interface import implementedBy, classImplements
+
 from sqlalchemy.ext.associationproxy import association_proxy, \
                                     AssociationProxy
 
@@ -103,6 +105,8 @@ class LocalizedEntityBuilder(EntityBuilder):
                              {'__init__': localized_init,
                               })
         # massage the object attributes
+        # zope.interface implements declaration
+        classImplements(Localized, implementedBy(entity))
         Localized.__not_localized_fields__ = not_localized_columns
         Localized.__name__ = entity.__name__ + 'Localized'
         Localized.__localized_entity__ = entity

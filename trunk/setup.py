@@ -19,6 +19,7 @@ setup(name='elixirext.localized',
       zip_safe=False,
       install_requires=[
           'elixir',
+          'zope.interface',
       ],
       entry_points="""
       # -*- Entry points: -*-
