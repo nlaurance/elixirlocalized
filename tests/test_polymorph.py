@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from elixir import has_field, Unicode, Date, using_options
-from elixir import Entity
+from elixir import Entity, Integer
 from elixirext.localized import acts_as_localized
 
 from elixir import setup_all, create_all, drop_all, cleanup_all
@@ -21,6 +21,9 @@ class Movie(Media):
     has_field('resume', Unicode)
     using_options(inheritance='multi', polymorphic=True, tablename='movie')
     acts_as_localized(for_fields=['resume'], default_locale='en')
+
+class Image(Media):
+    has_field('width', Integer)
 
 
 class TestPolymorphLocalized(unittest.TestCase):
@@ -80,3 +83,15 @@ class TestPolymorphLocalized(unittest.TestCase):
         retrieved_movie = Movie.query.first()
         assert retrieved_movie.get_localized('fr').title == u'À la recherche du temps perdu'
         assert retrieved_movie.get_localized('en').title == 'In Search of Lost Time and Remembrance of Things Past'
+
+    def test_create_untranslatable_subclass(self):
+        image = Image(author='Proust', title=u'À la recherche du temps perdu',
+                      width = 55,
+                      default_locale = "fr")
+        image.add_locale('en', title=u'In Search of Lost Time and Remembrance of Things Past')
+        session.commit()
+        session.expunge_all()
+        retrieved_image = Image.query.first()
+        assert retrieved_image.get_localized('fr').title == u'À la recherche du temps perdu'
+        assert retrieved_image.get_localized('en').title == 'In Search of Lost Time and Remembrance of Things Past'
+

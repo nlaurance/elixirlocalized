@@ -21,6 +21,11 @@ class Article(Entity):
     acts_as_localized(for_fields=['title', 'content'], default_locale='en')
     using_options(tablename='articles')
 
+    type = 'some article'
+
+    @property
+    def my_method(self):
+        return 'lorem'
 
 class TestLocalized(unittest.TestCase):
 
@@ -134,3 +139,13 @@ class TestLocalized(unittest.TestCase):
 
         author = article.get_localized('fr').author
         release = article.get_localized('fr').release
+
+    def test_python_decorated_methods(self):
+        fr = self.article.add_locale('fr', title='Les mille et une nuits', content=u"J'ai entendu dire, Ô mon roi, dit Scheherazade")
+        assert self.article.my_method == 'lorem'
+        assert fr.my_method == 'lorem'
+
+    def test_python_attrs(self):
+        fr = self.article.add_locale('fr', title='Les mille et une nuits', content=u"J'ai entendu dire, Ô mon roi, dit Scheherazade")
+        assert self.article.type == 'some article'
+        assert fr.type == 'some article'

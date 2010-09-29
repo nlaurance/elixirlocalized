@@ -107,7 +107,7 @@ class LocalizedEntityBuilder(EntityBuilder):
         Localized.__name__ = entity.__name__ + 'Localized'
         Localized.__localized_entity__ = entity
 
-#        for fname in ['author', 'release']:
+        #  add assoc proxy for untranslated columns
         for fname in [field for field in not_localized_columns if not hasattr(Localized, field)]:
             setattr(Localized, fname, association_proxy('%s_translated' % Localized.__name__, fname))
 
@@ -131,21 +131,33 @@ class LocalizedEntityBuilder(EntityBuilder):
                    polymorphic_identity='%s_localized' % entity.__name__.lower()
                    )
 
-        entity.__localized_class__ = Localized
 
-#        def get_localized_attr(self, attr):
-#            """ will return either the 'translated' attribute or
-#            the Localized one, as this will replace the __getattr__
-#            for the Localized class
-#            """
+
+        def get_localized_attr(self, attr):
+            """ will return either the 'translated' attribute or
+            the Localized one, as this will replace the __getattr__
+            for the Localized class
+            """
+            if attr.startswith('_'):
+                return object.__getattribute__(self, attr)
+            try:
+                return self.__getattribute__(attr)
+            except AttributeError:
+                translated = getattr(self, '%s_translated' % self.__class__.__name__)
+                return getattr(translated, attr)
+
 #            if attr in Localized.__not_localized_fields__:
 #                translated = getattr(self, '%s_translated' % self.__class__.__name__)
 #                return getattr(translated, attr)
 #            else:
 #                return self.__getattribute__(attr)
-#
-#        # patching __getattr__ for Localized
-#        Localized.__getattr__ = get_localized_attr
+
+        # patching __getattr__ for Localized
+        Localized.__getattr__ = get_localized_attr
+
+
+        entity.__localized_class__ = Localized
+
 
     def after_mapper(self):
         """
@@ -212,14 +224,14 @@ class LocalizedEntityBuilder(EntityBuilder):
             returns self if language is the default
             or None if translation is not set yet
             """
-            if locale_string == self.default_locale:
-                return self
             localized = None
             try:
                 localized = object_session(self).query(self.__localized_class__).filter( \
                        and_(self.__localized_class__.translated_id==self.id,
                             self.__localized_class__.locale_id==locale_string))[0]
             except IndexError:
+                if locale_string == self.default_locale:
+                    return self
                 pass
             return localized
 
@@ -229,6 +241,7 @@ class LocalizedEntityBuilder(EntityBuilder):
         entity.get_all_localized = get_all_localized
         entity.get_many_localized = get_many_localized
         entity.get_localized = get_localized
+
 
 
 acts_as_localized = Statement(LocalizedEntityBuilder)
