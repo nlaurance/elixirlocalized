@@ -3,6 +3,7 @@ from sqlalchemy.orm        import mapper, MapperExtension, EXT_CONTINUE, \
                                   object_session, relation
 from sqlalchemy            import ForeignKeyConstraint
 from elixir                import Integer, DateTime
+from elixir                import String
 from elixir                import Unicode
 from elixir.statements     import Statement
 from elixir.properties     import EntityBuilder
@@ -56,7 +57,7 @@ class LocalizedEntityBuilder(EntityBuilder):
                               ForeignKey("%s.%s" % (entity.table.name, entity_pk_name)),
                               primary_key=True,
                        ))
-        columns_and_constraints.append(Column('locale_id', Integer, primary_key=True))
+        columns_and_constraints.append(Column('locale_id', String, primary_key=True))
 
         entity_parent_class = False
         for class_ in entity.__mro__[1:]:
@@ -115,6 +116,7 @@ class LocalizedEntityBuilder(EntityBuilder):
         for fname in [field for field in not_localized_columns if not hasattr(Localized, field)]:
             setattr(Localized, fname, association_proxy('%s_translated' % Localized.__name__, fname))
 
+
         def localized__repr__(self):
             return '<%r %r, id: %r for: %r>' \
                % (self.__class__.__name__, self.locale_id,
@@ -142,6 +144,10 @@ class LocalizedEntityBuilder(EntityBuilder):
             the Localized one, as this will replace the __getattr__
             for the Localized class
             """
+#
+#            if attr.startswith('gen'):
+#                from nose.tools import set_trace; set_trace()
+
             if attr.startswith('_'):
                 return object.__getattribute__(self, attr)
             try:
@@ -176,6 +182,15 @@ class LocalizedEntityBuilder(EntityBuilder):
                                             cascade = 'all',
                                             )
                                    )
+
+
+#    def create_properties(self):
+#
+#        entity = self.entity
+#        # chercher ici les relations de entity pour les assoc proxyfier
+#        tt=list(entity.mapper.iterate_properties)
+#        from nose.tools import set_trace; set_trace()
+##        zz=filter( lambda x: type(x) == type(RelationshipProperty), tt)
 
     def finalize(self):
         """ add helper methods to the entity
