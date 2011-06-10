@@ -64,22 +64,24 @@ class LocalizedEntityBuilder(EntityBuilder):
             descriptor = getattr(class_, '_descriptor', False) # EntityBase has no _descriptor
             if descriptor and  getattr(class_._descriptor, 'table', None) is not None:
                 entity_parent_class = class_
+                break # stops at first parent
+
 
         localized_parent_class = False
         if entity_parent_class:
             localized_parent_class = getattr(entity_parent_class, '__localized_class__', False)
 
         # XXX!!!! should find a way to determine if this is needed (non polymorph)
-
         if localized_parent_class:
             # polymorphic inheritance is based on the foreign key tuple :
             # (translated content, language)
             # which tuple is the primary key of the root table
-            parent_table_name = localized_parent_class._sa_class_manager.mapper.mapped_table.name
-            columns_and_constraints.append(ForeignKeyConstraint(['translated_id',
-                                                'locale_id'],
-                                               ['%s.translated_id' % parent_table_name,
-                                                '%s.locale_id' % parent_table_name]))
+            for table in localized_parent_class._sa_class_manager.mapper.tables:
+                parent_table_name = table.name
+                columns_and_constraints.append(ForeignKeyConstraint(['translated_id',
+                                                    'locale_id'],
+                                                   ['%s.translated_id' % parent_table_name,
+                                                    '%s.locale_id' % parent_table_name]))
         else: # root case
             # if at root of the inheritance tree, add a translated_type column
             # to determine the type of object to load (polymorphic type)
